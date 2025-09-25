@@ -13,7 +13,8 @@ import SubClientCard from '../components/SubClientCard';
 import SubClientForm from '../components/SubClientForm';
 import SimpleBottomSheet from '../components/BottomSheet';
 
-type ActiveTab = 'vouchers' | 'clients';
+type ActiveTab = 'vouchers' | 'clients' | 'profile';
+type VoucherFilter = 'all' | 'active' | 'expired' | 'used';
 type BottomSheetContent = 'createVoucher' | 'addClient' | null;
 
 export default function MainScreen() {
@@ -22,6 +23,7 @@ export default function MainScreen() {
   const subClients = useSubClients(currentDistributor?.id || '');
   
   const [activeTab, setActiveTab] = useState<ActiveTab>('vouchers');
+  const [voucherFilter, setVoucherFilter] = useState<VoucherFilter>('active');
   const [bottomSheetContent, setBottomSheetContent] = useState<BottomSheetContent>(null);
 
   const handleCloseBottomSheet = () => {
@@ -36,32 +38,65 @@ export default function MainScreen() {
     handleCloseBottomSheet();
   };
 
+  const getFilteredVouchers = () => {
+    switch (voucherFilter) {
+      case 'active':
+        return vouchers.activeVouchers;
+      case 'expired':
+        return vouchers.expiredVouchers;
+      case 'used':
+        return vouchers.usedVouchers;
+      default:
+        return vouchers.vouchers;
+    }
+  };
+
+  const getVoucherStats = () => {
+    return {
+      total: vouchers.vouchers.length,
+      active: vouchers.activeVouchers.length,
+      expired: vouchers.expiredVouchers.length,
+      used: vouchers.usedVouchers.length,
+    };
+  };
+
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={commonStyles.container}>
         <ScrollView contentContainerStyle={commonStyles.centerContent}>
-          {/* Logo placeholder - using the HérculesVale branding */}
+          {/* Logo and Branding */}
           <View style={{ alignItems: 'center', marginBottom: 40 }}>
             <View style={{
-              width: 120,
-              height: 120,
+              width: 140,
+              height: 140,
               backgroundColor: colors.secondary,
-              borderRadius: 60,
+              borderRadius: 70,
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 16,
+              marginBottom: 20,
+              boxShadow: '0px 4px 12px rgba(30, 58, 138, 0.3)',
+              elevation: 6,
             }}>
               <Text style={{
                 color: colors.primary,
-                fontSize: 24,
-                fontWeight: '700',
+                fontSize: 32,
+                fontWeight: '800',
               }}>HV</Text>
             </View>
-            <Text style={[commonStyles.title, { color: colors.secondary }]}>
+            <Text style={[commonStyles.title, { 
+              color: colors.secondary, 
+              fontSize: 32,
+              marginBottom: 8,
+            }]}>
               HérculesVale
             </Text>
-            <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
-              Sistema Digital de Vales para Distribuidores
+            <Text style={[commonStyles.textLight, { 
+              textAlign: 'center',
+              fontSize: 16,
+              paddingHorizontal: 20,
+            }]}>
+              Sistema Digital de Vales{'\n'}
+              para Distribuidores
             </Text>
           </View>
 
@@ -78,6 +113,7 @@ export default function MainScreen() {
           <VoucherForm
             onCreateVoucher={vouchers.createVoucher}
             onVoucherCreated={handleVoucherCreated}
+            subClients={subClients.subClients}
           />
         );
       case 'addClient':
@@ -91,6 +127,9 @@ export default function MainScreen() {
         return null;
     }
   };
+
+  const stats = getVoucherStats();
+  const filteredVouchers = getFilteredVouchers();
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -106,23 +145,25 @@ export default function MainScreen() {
         backgroundColor: colors.backgroundAlt,
       }}>
         <View>
-          <Text style={[commonStyles.text, { fontWeight: '600' }]}>
-            Bienvenido, {currentDistributor?.name}
+          <Text style={[commonStyles.text, { fontWeight: '700', fontSize: 18 }]}>
+            Hola, {currentDistributor?.name}
           </Text>
-          <Text style={commonStyles.textLight}>
-            HérculesVale
+          <Text style={[commonStyles.textLight, { fontSize: 14 }]}>
+            HérculesVale - Sistema Digital
           </Text>
         </View>
         <TouchableOpacity
           onPress={logout}
           style={{
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            borderRadius: 6,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 8,
             backgroundColor: colors.background,
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
         >
-          <Text style={[commonStyles.textLight, { fontSize: 14 }]}>
+          <Text style={[commonStyles.textLight, { fontSize: 14, fontWeight: '500' }]}>
             Cerrar Sesión
           </Text>
         </TouchableOpacity>
@@ -140,7 +181,7 @@ export default function MainScreen() {
             flex: 1,
             paddingVertical: 16,
             alignItems: 'center',
-            borderBottomWidth: activeTab === 'vouchers' ? 2 : 0,
+            borderBottomWidth: activeTab === 'vouchers' ? 3 : 0,
             borderBottomColor: colors.secondary,
           }}
           onPress={() => setActiveTab('vouchers')}
@@ -148,11 +189,12 @@ export default function MainScreen() {
           <Text style={[
             commonStyles.text,
             {
-              fontWeight: activeTab === 'vouchers' ? '600' : '400',
+              fontWeight: activeTab === 'vouchers' ? '700' : '500',
               color: activeTab === 'vouchers' ? colors.secondary : colors.textLight,
+              fontSize: 16,
             }
           ]}>
-            Vales
+            🎫 Vales
           </Text>
         </TouchableOpacity>
         
@@ -161,7 +203,7 @@ export default function MainScreen() {
             flex: 1,
             paddingVertical: 16,
             alignItems: 'center',
-            borderBottomWidth: activeTab === 'clients' ? 2 : 0,
+            borderBottomWidth: activeTab === 'clients' ? 3 : 0,
             borderBottomColor: colors.secondary,
           }}
           onPress={() => setActiveTab('clients')}
@@ -169,11 +211,34 @@ export default function MainScreen() {
           <Text style={[
             commonStyles.text,
             {
-              fontWeight: activeTab === 'clients' ? '600' : '400',
+              fontWeight: activeTab === 'clients' ? '700' : '500',
               color: activeTab === 'clients' ? colors.secondary : colors.textLight,
+              fontSize: 16,
             }
           ]}>
-            Subclientes
+            👥 Subclientes
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            paddingVertical: 16,
+            alignItems: 'center',
+            borderBottomWidth: activeTab === 'profile' ? 3 : 0,
+            borderBottomColor: colors.secondary,
+          }}
+          onPress={() => setActiveTab('profile')}
+        >
+          <Text style={[
+            commonStyles.text,
+            {
+              fontWeight: activeTab === 'profile' ? '700' : '500',
+              color: activeTab === 'profile' ? colors.secondary : colors.textLight,
+              fontSize: 16,
+            }
+          ]}>
+            📊 Resumen
           </Text>
         </TouchableOpacity>
       </View>
@@ -182,52 +247,120 @@ export default function MainScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         {activeTab === 'vouchers' && (
           <View>
-            <View style={[commonStyles.row, { marginBottom: 20 }]}>
-              <Text style={commonStyles.subtitle}>
-                Mis Vales ({vouchers.vouchers.length})
+            {/* Action Button */}
+            <TouchableOpacity
+              style={[buttonStyles.primary, { 
+                marginBottom: 20,
+                paddingVertical: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }]}
+              onPress={() => setBottomSheetContent('createVoucher')}
+            >
+              <Text style={[commonStyles.buttonText, { fontSize: 18, marginRight: 8 }]}>
+                ➕
               </Text>
-              <TouchableOpacity
-                style={buttonStyles.primary}
-                onPress={() => setBottomSheetContent('createVoucher')}
-              >
-                <Text style={commonStyles.buttonText}>+ Crear Vale</Text>
-              </TouchableOpacity>
-            </View>
+              <Text style={[commonStyles.buttonText, { fontSize: 18 }]}>
+                Crear Nuevo Vale
+              </Text>
+            </TouchableOpacity>
 
-            {vouchers.vouchers.length === 0 ? (
+            {/* Filter Buttons */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 20 }}
+            >
+              {[
+                { key: 'active', label: `Activos (${stats.active})`, color: colors.success },
+                { key: 'expired', label: `Expirados (${stats.expired})`, color: colors.warning },
+                { key: 'used', label: `Usados (${stats.used})`, color: colors.textLight },
+                { key: 'all', label: `Todos (${stats.total})`, color: colors.secondary },
+              ].map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    marginRight: 12,
+                    backgroundColor: voucherFilter === filter.key ? filter.color : colors.background,
+                    borderWidth: 1,
+                    borderColor: filter.color,
+                  }}
+                  onPress={() => setVoucherFilter(filter.key as VoucherFilter)}
+                >
+                  <Text style={{
+                    color: voucherFilter === filter.key ? colors.primary : filter.color,
+                    fontWeight: '600',
+                    fontSize: 14,
+                  }}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Vouchers List */}
+            {filteredVouchers.length === 0 ? (
               <View style={[commonStyles.card, { alignItems: 'center', padding: 40 }]}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>🎫</Text>
+                <Text style={[commonStyles.text, { textAlign: 'center', marginBottom: 8 }]}>
+                  {voucherFilter === 'active' && 'No tienes vales activos'}
+                  {voucherFilter === 'expired' && 'No tienes vales expirados'}
+                  {voucherFilter === 'used' && 'No tienes vales usados'}
+                  {voucherFilter === 'all' && 'No tienes vales creados aún'}
+                </Text>
                 <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
-                  No tienes vales creados aún.{'\n'}
-                  Toca "Crear Vale" para empezar.
+                  {voucherFilter === 'all' && 'Toca "Crear Nuevo Vale" para empezar.'}
                 </Text>
               </View>
             ) : (
-              vouchers.vouchers.map((voucher) => (
-                <VoucherCard key={voucher.id} voucher={voucher} />
-              ))
+              filteredVouchers.map((voucher) => {
+                const subClient = subClients.subClients.find(c => c.id === voucher.subClientId);
+                return (
+                  <VoucherCard 
+                    key={voucher.id} 
+                    voucher={voucher} 
+                    subClientPhone={subClient?.phone}
+                  />
+                );
+              })
             )}
           </View>
         )}
 
         {activeTab === 'clients' && (
           <View>
-            <View style={[commonStyles.row, { marginBottom: 20 }]}>
-              <Text style={commonStyles.subtitle}>
-                Subclientes ({subClients.subClients.length})
+            {/* Action Button */}
+            <TouchableOpacity
+              style={[buttonStyles.primary, { 
+                marginBottom: 20,
+                paddingVertical: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }]}
+              onPress={() => setBottomSheetContent('addClient')}
+            >
+              <Text style={[commonStyles.buttonText, { fontSize: 18, marginRight: 8 }]}>
+                ➕
               </Text>
-              <TouchableOpacity
-                style={buttonStyles.primary}
-                onPress={() => setBottomSheetContent('addClient')}
-              >
-                <Text style={commonStyles.buttonText}>+ Agregar</Text>
-              </TouchableOpacity>
-            </View>
+              <Text style={[commonStyles.buttonText, { fontSize: 18 }]}>
+                Agregar Subcliente
+              </Text>
+            </TouchableOpacity>
 
+            {/* Clients List */}
             {subClients.subClients.length === 0 ? (
               <View style={[commonStyles.card, { alignItems: 'center', padding: 40 }]}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>👥</Text>
+                <Text style={[commonStyles.text, { textAlign: 'center', marginBottom: 8 }]}>
+                  No tienes subclientes registrados
+                </Text>
                 <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
-                  No tienes subclientes registrados aún.{'\n'}
-                  Toca "Agregar" para registrar el primero.
+                  Registra tu primer subcliente para poder crear vales más fácilmente.
                 </Text>
               </View>
             ) : (
@@ -235,6 +368,120 @@ export default function MainScreen() {
                 <SubClientCard key={subClient.id} subClient={subClient} />
               ))
             )}
+          </View>
+        )}
+
+        {activeTab === 'profile' && (
+          <View>
+            {/* Stats Cards */}
+            <View style={{ 
+              flexDirection: 'row', 
+              flexWrap: 'wrap', 
+              justifyContent: 'space-between',
+              marginBottom: 24,
+            }}>
+              <View style={[commonStyles.card, { 
+                width: '48%', 
+                alignItems: 'center',
+                backgroundColor: colors.success + '20',
+                borderColor: colors.success,
+              }]}>
+                <Text style={{ fontSize: 32, marginBottom: 8 }}>✅</Text>
+                <Text style={[commonStyles.text, { fontWeight: '700', fontSize: 24 }]}>
+                  {stats.active}
+                </Text>
+                <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
+                  Vales Activos
+                </Text>
+              </View>
+
+              <View style={[commonStyles.card, { 
+                width: '48%', 
+                alignItems: 'center',
+                backgroundColor: colors.secondary + '20',
+                borderColor: colors.secondary,
+              }]}>
+                <Text style={{ fontSize: 32, marginBottom: 8 }}>👥</Text>
+                <Text style={[commonStyles.text, { fontWeight: '700', fontSize: 24 }]}>
+                  {subClients.subClients.length}
+                </Text>
+                <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
+                  Subclientes
+                </Text>
+              </View>
+
+              <View style={[commonStyles.card, { 
+                width: '48%', 
+                alignItems: 'center',
+                backgroundColor: colors.warning + '20',
+                borderColor: colors.warning,
+              }]}>
+                <Text style={{ fontSize: 32, marginBottom: 8 }}>⏰</Text>
+                <Text style={[commonStyles.text, { fontWeight: '700', fontSize: 24 }]}>
+                  {stats.expired}
+                </Text>
+                <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
+                  Expirados
+                </Text>
+              </View>
+
+              <View style={[commonStyles.card, { 
+                width: '48%', 
+                alignItems: 'center',
+                backgroundColor: colors.textLight + '20',
+                borderColor: colors.textLight,
+              }]}>
+                <Text style={{ fontSize: 32, marginBottom: 8 }}>📋</Text>
+                <Text style={[commonStyles.text, { fontWeight: '700', fontSize: 24 }]}>
+                  {stats.used}
+                </Text>
+                <Text style={[commonStyles.textLight, { textAlign: 'center' }]}>
+                  Usados
+                </Text>
+              </View>
+            </View>
+
+            {/* Profile Info */}
+            <View style={commonStyles.card}>
+              <Text style={[commonStyles.subtitle, { marginBottom: 16 }]}>
+                👤 Información del Distribuidor
+              </Text>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[commonStyles.textLight, { fontSize: 12 }]}>Nombre</Text>
+                <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+                  {currentDistributor?.name}
+                </Text>
+              </View>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[commonStyles.textLight, { fontSize: 12 }]}>Usuario</Text>
+                <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+                  {currentDistributor?.username}
+                </Text>
+              </View>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[commonStyles.textLight, { fontSize: 12 }]}>Email</Text>
+                <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+                  {currentDistributor?.email}
+                </Text>
+              </View>
+              <View>
+                <Text style={[commonStyles.textLight, { fontSize: 12 }]}>Teléfono</Text>
+                <Text style={[commonStyles.text, { fontWeight: '600' }]}>
+                  {currentDistributor?.phone}
+                </Text>
+              </View>
+            </View>
+
+            {/* App Info */}
+            <View style={[commonStyles.card, { backgroundColor: colors.background }]}>
+              <Text style={[commonStyles.text, { fontWeight: '600', marginBottom: 8 }]}>
+                📱 HérculesVale v1.0
+              </Text>
+              <Text style={[commonStyles.textLight, { fontSize: 13, lineHeight: 18 }]}>
+                Sistema digital de vales para distribuidores.{'\n'}
+                Diseñado para facilitar la gestión de créditos y mejorar la experiencia de todos nuestros usuarios.
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>

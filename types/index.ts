@@ -28,12 +28,22 @@ export interface Voucher {
   isUsed: boolean;
   createdAt: string;
   usedAt?: string;
+  expiresAt: string; // 10 days from creation
   paymentStartDate?: string;
   paymentType: 'promotion' | 'cutoff';
   installments?: number;
+  isExpired: boolean;
 }
 
 export interface VoucherFormData {
+  subClientId: string;
   subClientName: string;
   amount: string;
+}
+
+export interface WhatsAppMessage {
+  folio: string;
+  subClientName: string;
+  amount: number;
+  expiryDate: string;
 }

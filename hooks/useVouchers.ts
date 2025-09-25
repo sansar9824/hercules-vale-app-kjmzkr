@@ -12,6 +12,17 @@ export const useVouchers = (distributorId: string) => {
     return `HV${folioNumber}`;
   };
 
+  const calculateExpiryDate = (): string => {
+    const now = new Date();
+    const expiryDate = new Date(now);
+    expiryDate.setDate(expiryDate.getDate() + 10); // 10 days validity
+    return expiryDate.toISOString();
+  };
+
+  const isVoucherExpired = (expiresAt: string): boolean => {
+    return new Date() > new Date(expiresAt);
+  };
+
   const calculatePaymentDetails = (amount: number) => {
     const now = new Date();
     
@@ -56,16 +67,19 @@ export const useVouchers = (distributorId: string) => {
     }
 
     const paymentDetails = calculatePaymentDetails(amount);
+    const expiresAt = calculateExpiryDate();
     
     const voucher: Voucher = {
       id: Date.now().toString(),
       folio: generateFolio(),
       distributorId,
-      subClientId: '', // Would be set if selecting existing subclient
+      subClientId: formData.subClientId,
       subClientName: formData.subClientName,
       amount,
       isUsed: false,
       createdAt: new Date().toISOString(),
+      expiresAt,
+      isExpired: false,
       ...paymentDetails,
     };
 
@@ -75,11 +89,31 @@ export const useVouchers = (distributorId: string) => {
   };
 
   const getVouchersByDistributor = () => {
-    return vouchers.filter(v => v.distributorId === distributorId);
+    return vouchers
+      .filter(v => v.distributorId === distributorId)
+      .map(voucher => ({
+        ...voucher,
+        isExpired: isVoucherExpired(voucher.expiresAt)
+      }));
+  };
+
+  const getActiveVouchers = () => {
+    return getVouchersByDistributor().filter(v => !v.isUsed && !v.isExpired);
+  };
+
+  const getExpiredVouchers = () => {
+    return getVouchersByDistributor().filter(v => v.isExpired && !v.isUsed);
+  };
+
+  const getUsedVouchers = () => {
+    return getVouchersByDistributor().filter(v => v.isUsed);
   };
 
   return {
     vouchers: getVouchersByDistributor(),
+    activeVouchers: getActiveVouchers(),
+    expiredVouchers: getExpiredVouchers(),
+    usedVouchers: getUsedVouchers(),
     createVoucher,
   };
 };
