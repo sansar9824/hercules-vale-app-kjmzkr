@@ -181,7 +181,7 @@ export default function VoucherForm({ onCreateVoucher, onVoucherCreated, subClie
           }))}
           autoCapitalize="words"
         />
-      </div>
+      </View>
       
       {/* Amount Input */}
       <View style={{ marginBottom: 24 }}>
